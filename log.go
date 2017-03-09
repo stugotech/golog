@@ -6,6 +6,13 @@ import (
 	"path"
 	"runtime"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
+)
+
+var (
+	// remember if Stderr is a console, to enable coloured output (-1 = no, 0 = not checked, 1 = yes)
+	stdErrIsConsole int
 )
 
 var (
@@ -101,14 +108,16 @@ func ConsoleWriter(tag string, level Level, msg string, fields []Field, frameDep
 			}
 		}
 
-		msg = fmt.Sprintf("%s%s \033[0;%dm[%s] %s", tag, callerinfo, level.Color(), level.Name(), msg)
+		fmt.Fprintf(os.Stderr, "%s%s ", tag, callerinfo)
+		writeColor(level.Color())
+		msg = fmt.Sprintf("[%s] %s", level.Name(), msg)
 		fmt.Fprintln(os.Stderr, msg)
 
 		for _, f := range fields {
 			fmt.Fprintf(os.Stderr, "\t%s = %s\n", f.Name(), f.String())
 		}
 
-		fmt.Fprint(os.Stderr, "\033[0m")
+		clearColor()
 	}
 }
 
@@ -128,4 +137,26 @@ func GetCallerFrame(skip int) *runtime.Frame {
 	}
 	frame, _ := runtime.CallersFrames(pc).Next()
 	return &frame
+}
+
+func writeColor(color int8) {
+	writeColorCode(fmt.Sprintf("\033[0;%dm", color))
+}
+
+func clearColor() {
+	writeColorCode("\033[0m")
+}
+
+func writeColorCode(code string) {
+	if stdErrIsConsole == 0 {
+		con := terminal.IsTerminal(int(os.Stderr.Fd()))
+		if con {
+			stdErrIsConsole = 1
+		} else {
+			stdErrIsConsole = -1
+		}
+	}
+	if stdErrIsConsole > 0 {
+		fmt.Fprint(os.Stderr, code)
+	}
 }
