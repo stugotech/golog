@@ -70,6 +70,15 @@ func Int64(name string, value int64) Field {
 	}
 }
 
+// Int creates a field to represent a signed integer
+func Int(name string, value int) Field {
+	return &field{
+		valueType: int64Field,
+		name:      name,
+		value:     int64(value),
+	}
+}
+
 // Uint8 creates a field to represent an unsigned integer
 func Uint8(name string, value uint8) Field {
 	return &field{
@@ -98,11 +107,20 @@ func Uint32(name string, value uint32) Field {
 }
 
 // Uint64 creates a field to represent an unsigned integer
-func Uint64(name string, value uint8) Field {
+func Uint64(name string, value uint64) Field {
 	return &field{
 		valueType: uint64Field,
 		name:      name,
 		value:     value,
+	}
+}
+
+// Uint creates a field to represent an unsigned integer
+func Uint(name string, value uint) Field {
+	return &field{
+		valueType: uint64Field,
+		name:      name,
+		value:     uint64(value),
 	}
 }
 
