@@ -46,6 +46,7 @@ type Logger interface {
 	Debug(format string, fields ...Field)
 
 	Errore(err error) error
+	Errorex(desc string, err error, fields ...Field) error
 }
 
 type stdLogger struct {
@@ -93,6 +94,13 @@ func (l *stdLogger) Errore(err error) error {
 		defaultWriter(l.tag, LevelError, err.Error(), nil, 1)
 	}
 
+	return logged
+}
+
+func (l *stdLogger) Errorex(desc string, err error, fields ...Field) error {
+	err = fmt.Errorf("%s: %v", desc, err)
+	logged, _ := WrapError(l.tag, err)
+	defaultWriter(l.tag, LevelError, err.Error(), nil, 1)
 	return logged
 }
 
