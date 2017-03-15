@@ -1,6 +1,10 @@
 package golog
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 // the following field types are built in
 const (
@@ -32,6 +36,7 @@ type field struct {
 	name      string
 	value     interface{}
 	valueType fieldType
+	slice     bool
 }
 
 // Int8 creates a field to represent a signed integer
@@ -151,6 +156,25 @@ func Bool(name string, value bool) Field {
 	}
 }
 
+// String creates a field to represent a string
+func String(name string, value string) Field {
+	return &field{
+		valueType: stringField,
+		name:      name,
+		value:     value,
+	}
+}
+
+// Strings creates a field to represent a slice of strings
+func Strings(name string, value []string) Field {
+	return &field{
+		valueType: stringField,
+		name:      name,
+		value:     value,
+		slice:     true,
+	}
+}
+
 // Name returns the name of a field
 func (f *field) Name() string {
 	return f.name
@@ -158,31 +182,39 @@ func (f *field) Name() string {
 
 // String returns the value of a field formatted as a string
 func (f *field) String() string {
+	if f.slice {
+		switch f.valueType {
+		case stringField:
+			return strings.Join(f.value.([]string), ", ")
+		default:
+			panic(fmt.Sprintf("fields: unsupported field type ([]%s)", f.valueType))
+		}
+	}
 	switch f.valueType {
 	case int8Field:
 		i := f.value.(int8)
-		return strconv.FormatInt(int64(i), 10)
+		return formatInt(int64(i))
 	case int16Field:
 		i := f.value.(int16)
-		return strconv.FormatInt(int64(i), 10)
+		return formatInt(int64(i))
 	case int32Field:
 		i := f.value.(int32)
-		return strconv.FormatInt(int64(i), 10)
+		return formatInt(int64(i))
 	case int64Field:
 		i := f.value.(int64)
-		return strconv.FormatInt(i, 10)
+		return formatInt(i)
 	case uint8Field:
 		i := f.value.(uint8)
-		return strconv.FormatUint(uint64(i), 10)
+		return formatUint(uint64(i))
 	case uint16Field:
 		i := f.value.(uint16)
-		return strconv.FormatUint(uint64(i), 10)
+		return formatUint(uint64(i))
 	case uint32Field:
 		i := f.value.(uint32)
-		return strconv.FormatUint(uint64(i), 10)
+		return formatUint(uint64(i))
 	case uint64Field:
 		i := f.value.(uint64)
-		return strconv.FormatUint(i, 10)
+		return formatUint(i)
 	case float32Field:
 		r := f.value.(float32)
 		return strconv.FormatFloat(float64(r), 'g', -1, 32)
@@ -195,6 +227,45 @@ func (f *field) String() string {
 	case stringField:
 		return f.value.(string)
 	default:
-		panic("fields: invalid value type")
+		panic(fmt.Sprintf("fields: unsupported field type (%s)", f.valueType))
+	}
+}
+
+func formatInt(i int64) string {
+	return strconv.FormatInt(i, 10) + " (0x" + strconv.FormatInt(i, 16) + ")"
+}
+
+func formatUint(i uint64) string {
+	return strconv.FormatUint(i, 10) + " (0x" + strconv.FormatUint(i, 16) + ")"
+}
+
+func (f fieldType) String() string {
+	switch f {
+	case int8Field:
+		return "int8"
+	case int16Field:
+		return "int16"
+	case int32Field:
+		return "int32"
+	case int64Field:
+		return "int64"
+	case uint8Field:
+		return "uint8"
+	case uint16Field:
+		return "uint16"
+	case uint32Field:
+		return "uint32"
+	case uint64Field:
+		return "uint64"
+	case float32Field:
+		return "float32"
+	case float64Field:
+		return "float64"
+	case boolField:
+		return "bool"
+	case stringField:
+		return "string"
+	default:
+		return "INVALID"
 	}
 }
