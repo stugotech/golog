@@ -6,6 +6,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"sync"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -13,6 +14,7 @@ import (
 var (
 	// remember if Stderr is a console, to enable coloured output (-1 = no, 0 = not checked, 1 = yes)
 	stdErrIsConsole int
+	consoleMutex    = &sync.Mutex{}
 )
 
 var (
@@ -116,16 +118,22 @@ func ConsoleWriter(tag string, level Level, msg string, fields []Field, frameDep
 			}
 		}
 
-		fmt.Fprintf(os.Stderr, "%s%s ", tag, callerinfo)
-		writeColor(level.Color())
-		msg = fmt.Sprintf("[%s] %s", level.Name(), msg)
-		fmt.Fprintln(os.Stderr, msg)
+		msg = fmt.Sprintf("%s%s%s [%s] %s\n",
+			tag,
+			callerinfo,
+			writeColor(level.Color()),
+			level.Name(),
+			msg,
+		)
 
 		for _, f := range fields {
-			fmt.Fprintf(os.Stderr, "\t%s = %s\n", f.Name(), f.String())
+			msg = fmt.Sprintf("%s\t%s = %s\n", msg, f.Name(), f.String())
 		}
 
-		clearColor()
+		msg += clearColor()
+		consoleMutex.Lock()
+		fmt.Fprint(os.Stderr, msg)
+		consoleMutex.Unlock()
 	}
 }
 
@@ -147,15 +155,15 @@ func GetCallerFrame(skip int) *runtime.Frame {
 	return &frame
 }
 
-func writeColor(color int8) {
-	writeColorCode(fmt.Sprintf("\033[0;%dm", color))
+func writeColor(color int8) string {
+	return writeColorCode(fmt.Sprintf("\033[0;%dm", color))
 }
 
-func clearColor() {
-	writeColorCode("\033[0m")
+func clearColor() string {
+	return writeColorCode("\033[0m")
 }
 
-func writeColorCode(code string) {
+func writeColorCode(code string) string {
 	if stdErrIsConsole == 0 {
 		con := terminal.IsTerminal(int(os.Stderr.Fd()))
 		if con {
@@ -165,6 +173,7 @@ func writeColorCode(code string) {
 		}
 	}
 	if stdErrIsConsole > 0 {
-		fmt.Fprint(os.Stderr, code)
+		return code
 	}
+	return ""
 }
