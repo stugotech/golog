@@ -73,7 +73,7 @@ func NewPackageLogger() Logger {
 
 func (l *stdLogger) Error(msg string, fields ...Field) error {
 	err := NewError(l.tag, msg)
-	defaultWriter(l.tag, LevelError, msg, fields, 1)
+	defaultWriter(l.tag, LevelError, err.Error(), fields, 1)
 	return err
 }
 
