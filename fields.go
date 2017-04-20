@@ -1,6 +1,7 @@
 package golog
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -175,6 +176,16 @@ func Strings(name string, value []string) Field {
 	}
 }
 
+// Bytes creates a field to represent a slice of bytes
+func Bytes(name string, value []byte) Field {
+	return &field{
+		valueType: uint8Field,
+		name:      name,
+		value:     value,
+		slice:     true,
+	}
+}
+
 // Name returns the name of a field
 func (f *field) Name() string {
 	return f.name
@@ -186,6 +197,8 @@ func (f *field) String() string {
 		switch f.valueType {
 		case stringField:
 			return strings.Join(f.value.([]string), ", ")
+		case uint8Field:
+			return hex.EncodeToString(f.value.([]byte))
 		default:
 			panic(fmt.Sprintf("fields: unsupported field type ([]%s)", f.valueType))
 		}
