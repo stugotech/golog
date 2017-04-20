@@ -198,7 +198,8 @@ func (f *field) String() string {
 		case stringField:
 			return strings.Join(f.value.([]string), ", ")
 		case uint8Field:
-			return hex.EncodeToString(f.value.([]byte))
+			b := f.value.([]byte)
+			return fmt.Sprintf("BINARY LENGTH %d (0x%x)\n%s", len(b), len(b), encodeHexString(b))
 		default:
 			panic(fmt.Sprintf("fields: unsupported field type ([]%s)", f.valueType))
 		}
@@ -281,4 +282,51 @@ func (f fieldType) String() string {
 	default:
 		return "INVALID"
 	}
+}
+
+func encodeHexString(h []byte) string {
+	const colCount = 4
+	const colWidth = 4
+
+	out := ""
+
+	for offset := 0; offset < len(h); {
+		text := ""
+		row := ""
+
+		for c := 0; offset < len(h) && c < 4; offset, c = offset+colWidth, c+1 {
+			end := offset + colWidth
+			if end > len(h) {
+				end = len(h)
+			}
+
+			slice := h[offset:end]
+			row += hex.EncodeToString(slice) + " "
+			text += printChars(slice) + " "
+		}
+
+		// pad incomplete rows
+		out += row
+		for pad := len(row); pad < colCount*(colWidth*2+1)+4; pad++ {
+			out += " "
+		}
+
+		out += text + "\n"
+	}
+
+	return out
+}
+
+func printChars(h []byte) string {
+	out := make([]byte, len(h))
+
+	for i := 0; i < len(h); i++ {
+		if h[i] < 32 || h[i] > 126 {
+			out[i] = '.'
+		} else {
+			out[i] = h[i]
+		}
+	}
+
+	return string(out)
 }
